@@ -1,0 +1,396 @@
+openapi: 3.0.3
+info:
+  title: QualifyHub API
+  description: API documentation for the QualifyHub MVP. This API handles Vacancy management, Candidate (CV) profiles, Skill Verification, and the Smart Matching algorithm.
+  version: 1.0.0
+  contact:
+    name: QualifyHub Dev Team
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local Development Server
+
+tags:
+  - name: Dictionaries
+    description: Static data and enums
+  - name: Vacancies
+    description: Employer operations for job postings
+  - name: CVs
+    description: Candidate operations and profile management
+  - name: Matching
+    description: Algorithms to match candidates to vacancies
+
+paths:
+  /dictionaries/categories:
+    get:
+      summary: Get Vacancy Categories
+      description: Returns the hardcoded list of job categories (e.g., Frontend, Backend). Used for dropdowns in the UI.
+      tags:
+        - Dictionaries
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryEnum'
+
+  /vacancies:
+    get:
+      summary: List all Vacancies
+      description: Retrieve a list of all open vacancies.
+      tags:
+        - Vacancies
+      responses:
+        '200':
+          description: A list of vacancies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vacancy'
+    post:
+      summary: Create a new Vacancy
+      description: Employer posts a new job opportunity.
+      tags:
+        - Vacancies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacancyInput'
+      responses:
+        '201':
+          description: Vacancy created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vacancy'
+
+  /vacancies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: The unique ID of the vacancy
+    get:
+      summary: Get a specific Vacancy
+      tags:
+        - Vacancies
+      responses:
+        '200':
+          description: Vacancy details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vacancy'
+        '404':
+          description: Vacancy not found
+    put:
+      summary: Update a Vacancy
+      tags:
+        - Vacancies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacancyInput'
+      responses:
+        '200':
+          description: Vacancy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vacancy'
+    delete:
+      summary: Delete a Vacancy
+      tags:
+        - Vacancies
+      responses:
+        '204':
+          description: Vacancy deleted successfully (No Content)
+
+  /vacancies/{id}/matches:
+    get:
+      summary: Get Top 10 CV Matches
+      description: Smart Algorithm Endpoint. Returns the top 10 most relevant CVs based on skills and verification status.
+      tags:
+        - Matching
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Top 10 matching CVs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CV'
+
+  /cvs:
+    get:
+      summary: List all CVs
+      description: Retrieve all standardized candidate profiles.
+      tags:
+        - CVs
+      responses:
+        '200':
+          description: List of CVs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CV'
+    post:
+      summary: Create a new CV
+      description: Candidate submits their standardized profile.
+      tags:
+        - CVs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CVInput'
+      responses:
+        '201':
+          description: CV created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+
+  /cvs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get a specific CV
+      tags:
+        - CVs
+      responses:
+        '200':
+          description: CV details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+    put:
+      summary: Update a CV
+      description: Candidate updates their info.
+      tags:
+        - CVs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CVInput'
+      responses:
+        '200':
+          description: CV updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+    delete:
+      summary: Delete a CV
+      tags:
+        - CVs
+      responses:
+        '204':
+          description: CV deleted
+
+  /cvs/{cvId}/skills/{skillName}/verify:
+    patch:
+      summary: Verify or Unverify a Skill
+      description: Admin/Vettor endpoint. Toggles the isVerified boolean for a specific skill.
+      tags:
+        - CVs
+      parameters:
+        - name: cvId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: skillName
+          in: path
+          required: true
+          schema:
+            type: string
+            description: The name of the skill to verify
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                verified:
+                  type: boolean
+                  description: Set to true to verify, false to unverify.
+      responses:
+        '200':
+          description: Skill status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CV'
+        '404':
+          description: CV or Skill not found
+
+components:
+  schemas:
+    CategoryEnum:
+      type: string
+      enum:
+        - Frontend
+        - Backend
+        - Fullstack
+        - Mobile
+        - DevOps
+        - QA
+        - Data Science
+        - Design
+
+    ExperienceLevelEnum:
+      type: string
+      enum:
+        - Junior
+        - Mid
+        - Senior
+        - Lead
+
+    Skill:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Python
+        isVerified:
+          type: boolean
+          description: True if QualifyHub vetted this skill
+          default: false
+          readOnly: true
+
+    VacancyInput:
+      type: object
+      required:
+        - title
+        - category
+        - requiredSkills
+        - salaryRange
+      properties:
+        title:
+          type: string
+          example: Senior Python Developer
+        description:
+          type: string
+          example: We are looking for a backend wizard...
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        requiredSkills:
+          type: array
+          items:
+            type: string
+          example:
+            - Python
+            - Django
+            - PostgreSQL
+        salaryRange:
+          type: string
+          example: $3000 - $5000
+        location:
+          type: string
+          example: Almaty, Kazakhstan
+
+    Vacancy:
+      allOf:
+        - $ref: '#/components/schemas/VacancyInput'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            status:
+              type: string
+              enum:
+                - Open
+                - Closed
+              default: Open
+            createdAt:
+              type: string
+              format: date-time
+
+    CVInput:
+      type: object
+      required:
+        - fullName
+        - email
+        - experienceLevel
+        - skills
+      properties:
+        fullName:
+          type: string
+          example: Amir Kurmanbekov
+        email:
+          type: string
+          format: email
+          example: amir@example.com
+        summary:
+          type: string
+          example: Motivated backend developer with 3 years experience...
+        experienceLevel:
+          $ref: '#/components/schemas/ExperienceLevelEnum'
+        skills:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Python
+
+    CV:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+        summary:
+          type: string
+        experienceLevel:
+          $ref: '#/components/schemas/ExperienceLevelEnum'
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        createdAt:
+          type: string
+          format: date-time
