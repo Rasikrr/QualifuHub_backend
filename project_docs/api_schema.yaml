@@ -1,7 +1,10 @@
 openapi: 3.0.3
 info:
   title: QualifyHub API
-  description: API documentation for the QualifyHub MVP. This API handles Vacancy management, Candidate (CV) profiles, Skill Verification, and the Smart Matching algorithm.
+  description: >
+    API documentation for the QualifyHub MVP. 
+    This API handles Vacancy management, Candidate (CV) profiles, Skill Verification, 
+    and the Smart Matching algorithm to connect employers with verified talent.
   version: 1.0.0
   contact:
     name: QualifyHub Dev Team
@@ -21,6 +24,9 @@ tags:
     description: Algorithms to match candidates to vacancies
 
 paths:
+  # -------------------------------------------------------------------------
+  # DICTIONARIES
+  # -------------------------------------------------------------------------
   /dictionaries/categories:
     get:
       summary: Get Vacancy Categories
@@ -36,7 +42,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CategoryEnum'
+                example: ["Frontend", "Backend", "Fullstack", "Mobile", "DevOps", "QA", "Data Science", "Design"]
 
+  # -------------------------------------------------------------------------
+  # VACANCIES CRUD
+  # -------------------------------------------------------------------------
   /vacancies:
     get:
       summary: List all Vacancies
@@ -118,10 +128,17 @@ paths:
         '204':
           description: Vacancy deleted successfully (No Content)
 
+  # -------------------------------------------------------------------------
+  # MATCHING ENGINE
+  # -------------------------------------------------------------------------
   /vacancies/{id}/matches:
     get:
       summary: Get Top 10 CV Matches
-      description: Smart Algorithm Endpoint. Returns the top 10 most relevant CVs based on skills and verification status.
+      description: >
+        Smart Algorithm Endpoint. 
+        Taking the Vacancy ID, the backend analyzes the vacancy's 'requiredSkills' and 'category'.
+        It searches the CV database, prioritizing candidates who have those specific skills marked as 'isVerified: true'.
+        Returns the top 10 most relevant CVs.
       tags:
         - Matching
       parameters:
@@ -141,6 +158,9 @@ paths:
                 items:
                   $ref: '#/components/schemas/CV'
 
+  # -------------------------------------------------------------------------
+  # CVs / CANDIDATES CRUD
+  # -------------------------------------------------------------------------
   /cvs:
     get:
       summary: List all CVs
@@ -220,10 +240,14 @@ paths:
         '204':
           description: CV deleted
 
+  # -------------------------------------------------------------------------
+  # SKILL VERIFICATION
+  # -------------------------------------------------------------------------
   /cvs/{cvId}/skills/{skillName}/verify:
     patch:
-      summary: Verify or Unverify a Skill
-      description: Admin/Vettor endpoint. Toggles the isVerified boolean for a specific skill.
+      summary: Verify/Unverify a Skill
+      description: >
+        Admin/Vettor endpoint. Toggles the 'isVerified' boolean for a specific skill within a candidate's CV.
       tags:
         - CVs
       parameters:
@@ -238,7 +262,7 @@ paths:
           required: true
           schema:
             type: string
-            description: The name of the skill to verify
+            description: The name of the skill to verify (must exist in the CV)
       requestBody:
         required: true
         content:
@@ -261,6 +285,9 @@ paths:
 
 components:
   schemas:
+    # -----------------------
+    # ENUMS
+    # -----------------------
     CategoryEnum:
       type: string
       enum:
@@ -281,6 +308,9 @@ components:
         - Senior
         - Lead
 
+    # -----------------------
+    # MODELS
+    # -----------------------
     Skill:
       type: object
       required:
@@ -288,10 +318,10 @@ components:
       properties:
         name:
           type: string
-          example: Python
-        isVerified:
+          example: "Python"
+        is_verified:
           type: boolean
-          description: True if QualifyHub vetted this skill
+          description: "True if QualifyHub vetted this skill"
           default: false
           readOnly: true
 
@@ -300,31 +330,28 @@ components:
       required:
         - title
         - category
-        - requiredSkills
-        - salaryRange
+        - required_skills
+        - salary_range
       properties:
         title:
           type: string
-          example: Senior Python Developer
+          example: "Senior Python Developer"
         description:
           type: string
-          example: We are looking for a backend wizard...
+          example: "We are looking for a backend wizard..."
         category:
           $ref: '#/components/schemas/CategoryEnum'
-        requiredSkills:
+        required_skills:
           type: array
           items:
             type: string
-          example:
-            - Python
-            - Django
-            - PostgreSQL
-        salaryRange:
+          example: ["Python", "Django", "PostgreSQL"]
+        salary_range:
           type: string
-          example: $3000 - $5000
+          example: "$3000 - $5000"
         location:
           type: string
-          example: Almaty, Kazakhstan
+          example: "Almaty, Kazakhstan"
 
     Vacancy:
       allOf:
@@ -336,9 +363,7 @@ components:
               format: uuid
             status:
               type: string
-              enum:
-                - Open
-                - Closed
+              enum: [Open, Closed]
               default: Open
             createdAt:
               type: string
@@ -347,31 +372,28 @@ components:
     CVInput:
       type: object
       required:
-        - fullName
+        - full_name
         - email
-        - experienceLevel
+        - experience_level
         - skills
       properties:
-        fullName:
+        full_name:
           type: string
-          example: Amir Kurmanbekov
+          example: "Amir Kurmanbekov"
         email:
           type: string
           format: email
-          example: amir@example.com
+          example: "amir@example.com"
         summary:
           type: string
-          example: Motivated backend developer with 3 years experience...
-        experienceLevel:
+          example: "Motivated backend developer with 3 years experience..."
+        experience_level:
           $ref: '#/components/schemas/ExperienceLevelEnum'
         skills:
           type: array
           items:
-            type: object
-            properties:
-              name:
-                type: string
-                example: Python
+            type: string
+          example: ["Python", "FastAPI"]
 
     CV:
       type: object
@@ -379,13 +401,13 @@ components:
         id:
           type: string
           format: uuid
-        fullName:
+        full_name:
           type: string
         email:
           type: string
         summary:
           type: string
-        experienceLevel:
+        experience_level:
           $ref: '#/components/schemas/ExperienceLevelEnum'
         skills:
           type: array

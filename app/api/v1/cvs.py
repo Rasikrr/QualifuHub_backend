@@ -55,6 +55,13 @@ def list_cvs(session: Session = Depends(get_session)):
     cvs = session.exec(select(CV)).all()
     return [CVRead.from_orm_custom(c) for c in cvs]
 
+@router.get("/{id}", response_model=CVRead)
+def get_cv(id: UUID, session: Session = Depends(get_session)):
+    cv = session.get(CV, id)
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV not found")
+    return CVRead.from_orm_custom(cv)
+
 class VerifySkillInput(BaseModel):
     verified: bool
 
